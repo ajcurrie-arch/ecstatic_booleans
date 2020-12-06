@@ -1,0 +1,1234 @@
+var levelDisplayOffsetX; //x coordinate of top left corner of the level display on the canvas
+var levelDisplayOffsetY; //y coordinate of top left corner of the level display on the canvas 
+var tileWidth; //length and width of tiles when displayed on the canvas
+var wallColor; //color for static level walls
+var levelLowerBound; //y coordinate of farthest down static tile of level, whether air or solid
+var levelRightBound; //x coordinate of rightmost static tile of level, whether air or solid
+
+
+var updateCycleNumber = 0; //number of current update cycle
+var gravDirectionX = -1; //x component of current gravity direction
+var gravDirectionY = 0; //y component of current gravity direction
+var currentLevelNumber = 1; 
+var staticTiles = [
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]; //array to hold static tile level data once it has been loaded, not all indices will be used for every level
+var mobileTileIdMapping = [
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+]; //maps level discrete coordinates to mobile tile ids, has value of -1 at coordinates where no mobile tile is present
+var mobileTiles = []; //array of all mobile tiles, destroyed tiles represented by null
+var updateQueueIds = []; //Ids of mobile tiles which require an additional update after the main update sweep is concluded. Ids added at the end of the array and updated in the order they are added.
+
+
+
+
+
+
+
+
+
+//         LEVELS
+//     ---------------
+
+/*
+'#' for static, solid box wall.
+' ' for air (empty space).
+'T' for normal falling tile.
+'G' for golden objective tile.
+'S' for stone tile.
+'W' for wooden crate tile.
+'B' for balloon tile.
+'A' for anti-gravity tile.
+*/
+
+
+//for testing new features and tracking down glitches
+var debugLevel = [
+"########",
+"#      #",
+"#      #",
+"#      #",
+"#      #",
+"#      #",
+"#      #",
+"########"
+];
+
+
+var level1 = [
+"########",
+"##T#####",
+"##     #",
+"##      ",
+"#  #  G#",
+"########"
+];
+
+var level2 = [
+"### ######",
+"# # #   ##",
+"#       ##",
+"#        #",
+"#   B    #",
+"#TTTT   ##",
+"#G       #",
+"###  #####",
+"##########"
+];
+
+var level3 = [
+"######## #######",
+"#  ###   #  ####",
+"## #         ###",
+"#  ## ### ######",
+"# ### #BB BB  ##",
+"# ###G T       #",
+"#     ###      #",
+"### ####     ###",
+"##   T##   B   #",
+"################"
+];
+
+var level4 = [
+"###################  ",
+"#S ASASASA           ",
+"######### #########  ",
+"### ##### ####    #  ",
+"#### #### #  # ## #  ",
+"###   ### #  # ## #  ",
+"##  # ### #AA# ## #  ",
+"## ## ### #AA  ##    ",
+"##     ## #    ## #  ",
+"#  #  ### #  #### #  ",
+"# ### ### #  ####B#  ",
+"# ##  #   #  ####G#  ",
+"#  # ## ###  ######  ",
+"## #    ###  ######  ",
+"##  ### #    ######  ",
+"#  ####   #     #### ",
+"###########       ###",
+"#########       # ###",
+"########  ###  ##### ",
+"############  #####  ",
+"###################  "
+];
+
+//scrapped level idea
+/*var level6 = [
+" #                   ",
+"#B######  #  ########",
+"#B##   A # #     ####",
+"#   # ## ### ##  ####",
+"# #   #       #  ####",
+"# #####       #######",
+"#  #             #   ",
+"#         S          ",
+"# #      ###      #  ",
+"# #      ###      ## ",
+"# #      ###      #  ",
+"#         #        # ",
+"#  #    A           #",
+"#   #               #",
+"#                   #",
+"##   #   ###   #    #",
+"#B   ###B###B###    #",
+"#TB#       # G#     #",
+"##### #### #B########",
+"##### ####   ########",
+"##### #### ##########"
+];*/
+
+var level5 = [
+"###############",
+"#######       #",
+"###G### ##### #",
+"#WWWWWBWWWWWWW#",
+"#WWBWWWBWWWWWW#",
+"#WWWWWWWWWWWWW ",
+"#WWWBWWWBWWWWW#",
+"#WWWWBWWWWWWWW#",
+"#SWWWW#WWWWWWW#",
+"##### ## ## ###",
+"#####    ## ###",
+"########    ###",
+"###############"
+];
+
+
+//level to congratulate player on winning the game
+var winnerLevel = [
+"###################################",
+"#                                 #",
+"# T   T ATA T   A T   A ATA TT  T #",
+"# A   A  T  AT  T AT  A T   A A A #",
+"# A T T  A  T A T T A T ATA TT  T #",
+"# T A T  T  A  AT A  AT T   A T   #",
+"#  T A  AAA T   T T   T TTT T A T #",
+"#                                 #",
+"###################################"
+];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//           GRAPHICS
+//       ----------------
+
+
+
+//draws normal grey tiles at the level discrete coordinates x, y
+var normalTileDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  
+  let marginSize = 0.12 * tileWidth; //thickness of the margin between the indented square and tile edge in the graphic
+  
+  push();
+    fill(220, 220, 220);
+    noStroke();  
+  
+    //Draw the main tile form.
+    rect(canvCoords[0], canvCoords[1], tileWidth, tileWidth);
+    
+  
+    fill(210, 210, 210);
+    
+    //Draw the indented square in the middle of the tile.
+    rect(canvCoords[0] + marginSize, canvCoords[1] + marginSize, tileWidth - marginSize * 2, tileWidth - marginSize * 2);
+  pop();
+}; //end of normalTileDraw function
+
+//draws stone tiles at the level discrete coordinates x, y
+var stoneDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  push();
+    fill(105, 105, 105);
+    noStroke();
+    
+    //Draw the main tile form.
+    rect(canvCoords[0], canvCoords[1], tileWidth, tileWidth);
+    
+    
+    //Draw the cracks in the stone.
+    
+    stroke(0, 0, 0);
+    strokeWeight(tileWidth * 0.01);
+    line(canvCoords[0], canvCoords[1] + tileWidth * 0.7, canvCoords[0] + tileWidth * 0.3, canvCoords[1] + tileWidth * 0.25);
+    line(canvCoords[0] + tileWidth * 0.3, canvCoords[1] + tileWidth * 0.25, canvCoords[0] + tileWidth * 0.35, canvCoords[1]);
+    
+    strokeWeight(tileWidth * 0.005);
+    line(canvCoords[0] + tileWidth * 0.3, canvCoords[1] + tileWidth * 0.25, canvCoords[0] + tileWidth * 0.5, canvCoords[1] + tileWidth * 0.3);
+  
+    strokeWeight(tileWidth * 0.0075);
+    line(canvCoords[0] + tileWidth, canvCoords[1] + tileWidth * 0.6, canvCoords[0] + tileWidth * 0.7, canvCoords[1] + tileWidth * 0.5);
+  //canvCoords[0] + tileWidth * 0.5);
+    
+    strokeWeight(tileWidth * 0.01);
+    
+    line(canvCoords[0] + tileWidth * 0.35, canvCoords[1] + tileWidth, canvCoords[0] + tileWidth * 0.35, canvCoords[1] + tileWidth * 0.8);
+  
+    strokeWeight(tileWidth * 0.005);
+    line(canvCoords[0] + tileWidth * 0.35, canvCoords[1] + tileWidth * 0.8, canvCoords[0] + tileWidth * 0.25, canvCoords[1] + tileWidth * 0.77);
+    line(canvCoords[0] + tileWidth * 0.35, canvCoords[1] + tileWidth * 0.8, canvCoords[0] + tileWidth * 0.55, canvCoords[1] + tileWidth * 0.7);
+    //line(canvCoords[0]);
+  
+  pop();
+  
+  
+}; //end of stoneDraw function
+
+//draws wooden crate tiles at the level discrete coordinates x, y
+var woodDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  let lrCanvCoords = [canvCoords[0] + tileWidth, canvCoords[1] + tileWidth]; //coordinates of the lower right corner of the tile in an (x, y) ordered pair representation
+  
+  push();
+    fill(120, 130, 0);
+    stroke(0, 0, 0);
+    strokeWeight(1);
+    
+    let sideWidth = tileWidth * 0.18; //width of wooden borders on the top, left, right and bottom of the tile
+  
+    //Draw the main tile form.
+    rect(canvCoords[0], canvCoords[1], tileWidth, tileWidth);
+    
+    //Draw the upper wooden border.
+    rect(canvCoords[0], canvCoords[1], tileWidth, sideWidth);
+  
+    //Draw the lower wooden border.
+    rect(canvCoords[0], canvCoords[1] + tileWidth - sideWidth, tileWidth, sideWidth);
+  
+    //Draw the left wooden border.
+    rect(canvCoords[0], canvCoords[1] + sideWidth, sideWidth, tileWidth - sideWidth * 2);
+  
+    //Draw the right wooden border.
+    rect(canvCoords[0] + tileWidth - sideWidth, canvCoords[1] + sideWidth, sideWidth, tileWidth - sideWidth * 2);
+    
+    let interiorWidth = tileWidth - sideWidth * 2; //width of the square between the wooden borders on the sides of the tile
+    
+    //Draw the edges of the diagonal wooden planks in the middle of the tile.
+    
+    line(canvCoords[0] + sideWidth, canvCoords[1] + sideWidth, lrCanvCoords[0] - sideWidth, lrCanvCoords[1] - sideWidth);
+    line(canvCoords[0] + sideWidth + (tileWidth - sideWidth * 2) / 2, canvCoords[1] + sideWidth, lrCanvCoords[0] - sideWidth, canvCoords[1] + sideWidth + (tileWidth - sideWidth * 2) / 2);
+    line(canvCoords[0] + sideWidth, canvCoords[1] + sideWidth + interiorWidth / 2, canvCoords[0] + sideWidth + interiorWidth / 2, lrCanvCoords[1] - sideWidth);
+    
+  pop();
+}; //end of woodDraw function
+
+//draws black antigravity tiles at the level discrete coordinates x, y
+var antigravDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  push();
+    fill(0, 0, 0);
+    
+    
+    //Draw the main form of the tile.
+    rect(canvCoords[0], canvCoords[1], tileWidth, tileWidth, tileWidth * 0.2);
+    
+  
+    //Set the rectangle draw mode to CENTER.
+    rectMode(CENTER);
+    
+    
+    noFill();
+    stroke(60, 60, 60);
+    strokeWeight(0.7);
+    
+    
+    //Draw the simplified lighting effect on the tile.
+    rect(canvCoords[0] + tileWidth / 2, canvCoords[1] + tileWidth / 2, tileWidth - 0.4 * (1 - sqrt(2) / 2) * tileWidth, tileWidth - 0.4 * (1 - sqrt(2) / 2) * tileWidth, tileWidth * 0.12);
+    
+  
+    
+  pop();
+  
+} //end of antigravDraw function
+
+//draws one of the reflection lines for the gold tile graphic, with upper left corner at (x, y) in canvas coordinates and horizontal and vertical span of "width"
+function goldLineDraw(x, y, width) {
+  push();
+    //Set the mode for color functions to hue-saturation-brightness.
+    colorMode(HSB, 360, 100, 100, 100);  
+    
+    strokeWeight(tileWidth / 7);
+    stroke(48, 100, 100);
+  
+    //Draw the line.
+    line(x, y, x + width, y + width);
+  pop();
+} //end of goldLineDraw function
+
+//draws a golden objective tile at the level discrete coordinates x, y
+var goldDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  
+  push();
+  
+    //Set the mode for color functions to hue-saturation-brightness.
+    colorMode(HSB, 360, 100, 100, 100);
+    
+    fill(48, 100, 97);
+    noStroke();
+    
+    
+    //Begin drawing a polygonal shape from given vertices.
+    beginShape();
+      let bevelx = tileWidth / 10; //horizontal span of the bevels on the corners of the graphic
+    
+      vertex(canvCoords[0] + bevelx, canvCoords[1]);
+      vertex(canvCoords[0] + tileWidth - bevelx, canvCoords[1]);
+      vertex(canvCoords[0] + tileWidth, canvCoords[1] + bevelx);
+      vertex(canvCoords[0] + tileWidth, canvCoords[1] + tileWidth - bevelx);
+      vertex(canvCoords[0] + tileWidth - bevelx, canvCoords[1] + tileWidth);
+      vertex(canvCoords[0] + bevelx, canvCoords[1] + tileWidth);
+      vertex(canvCoords[0], canvCoords[1] + tileWidth - bevelx);
+      vertex(canvCoords[0], canvCoords[1] + bevelx);
+    endShape(CLOSE);
+    
+  
+    goldLineDraw(canvCoords[0] + tileWidth * 0.1, canvCoords[1] + tileWidth * 0.2, tileWidth * 0.7);
+  
+    goldLineDraw(canvCoords[0] + tileWidth * 0.7, canvCoords[1] + tileWidth * 0.1, tileWidth * 0.2);
+  
+  pop();
+} //end of goldDraw function
+
+//draws a balloon tile at the level discrete coordinates x, y
+var balloonDraw = function(x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  
+  push();
+    //let tieoffSize = 2;
+    let triHeight = tileWidth * 0.15; //height of the triangular part of the balloon graphic
+    
+  
+    fill(255, 0, 0);
+    stroke(200, 0, 0);
+    strokeWeight(1);
+    
+    //Draw the triangular part of the balloon graphic.
+    triangle(canvCoords[0] + tileWidth / 2 - triHeight, canvCoords[1] + tileWidth, canvCoords[0] + tileWidth / 2, canvCoords[1] + tileWidth - triHeight, canvCoords[0] + tileWidth / 2 + triHeight, canvCoords[1] + tileWidth);
+    
+    let circleRad = ((canvCoords[1] + tileWidth - triHeight) -  canvCoords[1]) / 2; //radius of the circular balloon portion of the balloon graphic
+    
+    //Draw the circular balloon part of the balloon graphic.
+    ellipse(canvCoords[0] + tileWidth / 2, canvCoords[1] + circleRad, circleRad * 2, circleRad * 2);
+    
+    fill(255, 40, 50);
+    noStroke();
+    
+    //Draw the lighting circle on the balloon.
+    circle(canvCoords[0] + tileWidth * 0.65, canvCoords[1] + tileWidth * 0.3, tileWidth * 0.25);
+  
+    /*strokeWeight(tieoffSize);
+    stroke(0, 0, 0);  
+  
+    point(canvCoords[0] + tileWidth / 2, canvCoords[1] + tileWidth - triHeight);
+    */
+  
+    
+  pop();
+}; //end of balloonDraw function
+
+//draws static level tiles with type 'type', at level discrete coordinates x, y
+function drawStaticTile(type, x, y) {
+  let canvCoords = tileToCanvCoords(x, y);
+  
+  
+  if (type == 1) { //solid wall type
+    push();
+      fill(wallColor);
+    
+      stroke(wallColor);
+      
+      strokeWeight(0.04 * tileWidth); //Set the strokeweight up to fill in cracks between tile graphics.
+    
+    
+      rect(canvCoords[0], canvCoords[1], tileWidth, tileWidth);
+    pop();
+  }
+} //end of drawStaticTile function
+
+//draws all static and mobile tiles in the level
+function drawTiles() {
+  
+  for (let i = 0; i <= levelLowerBound; i++) { //For every tile in the level...
+    for (let j = 0; j <= levelRightBound; j++) {
+      
+      //Draw the static tile at these coordinates.
+      drawStaticTile(staticTiles[i][j], j, i);
+      
+    } //end of for loop
+  } //end of for loop
+  
+  
+  //Draw the mobile tiles in the level.
+  for (let i = 0; i < mobileTiles.length; i++) { //For every mobile tile...
+    if (mobileTiles[i] != null) { //If this mobile exists,
+      let x = mobileTiles[i].x;
+      let y = mobileTiles[i].y;
+      
+      mobileTiles[i].draw(x, y); //draw it.
+    }
+  } //end of for loop
+} //end of drawTiles function
+
+//draws the current level configuration onto the canvas
+function drawLevel() {
+  
+  background(0);
+  
+  
+  //Draw the background portion of the level.
+  push();
+    fill(80, 110, 80);
+    stroke(80, 110, 80);
+    strokeWeight(0.02 * tileWidth);
+  
+    rect(levelDisplayOffsetX, levelDisplayOffsetY, tileWidth * (levelRightBound + 1), tileWidth * (levelLowerBound + 1));
+  pop();
+  
+  
+  drawTiles();
+  
+} //end of drawLevel function
+
+
+
+
+
+
+
+
+
+//           LOW-LEVEL FUNCTIONS
+//      -----------------------------
+
+
+//converts level discrete coordinates into canvas coordinates
+function tileToCanvCoords(x, y) {
+  return [levelDisplayOffsetX + x * tileWidth, levelDisplayOffsetY + y * tileWidth];
+}
+
+//loads a string array representation of a level as the new current level
+function load(levelStringArray) {
+  
+  //Clear all mobile tiles from mobileTileIdMapping, so they do not linger into the next level.
+  for (let i = 0; i < mobileTiles.length; i++) {
+    if (mobileTiles[i] != null) {
+      let x = mobileTiles[i].x;
+      let y = mobileTiles[i].y;
+    
+    
+      if (tileInBounds(x, y))
+        mobileTileIdMapping[y][x] = -1;
+    }
+  }
+  
+  //Clear the mobile tile array so that mobile tiles from the previous level will not linger.
+  mobileTiles = [];
+  
+  
+  levelLowerBound = levelStringArray.length - 1;
+  levelRightBound = levelStringArray[0].length - 1;
+    
+  
+  //Convert the characters in the string array into tiles and store the tiles in the level static tiles array or mobile tiles array.
+  for (let i = 0; i <= levelLowerBound; i++) {
+    for (let j = 0; j <= levelRightBound; j++) {
+      let tileChar = levelStringArray[i].charAt(j); //character representing this tile
+      
+      
+      if (tileChar == "#") { //tile is a static wall tile
+       
+        staticTiles[i][j] = 1;
+        //print("Set " + j + " " + i + " t sld.");
+        
+      } else if (tileChar == " ") {
+        
+        staticTiles[i][j] = 0;
+        //print("St " + j + " " + i + " t air. ");
+      
+      } else if (tileChar == "T") { //tile is a normal dynamic tile
+        
+        
+        let mobile = new MobileTile(j, i, 1, false, true, normalTileDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+        //print("Md mbl at " + j + " " + i + ".");
+        
+        if (i == 5 && j == 7) {
+            debugMonitor = mobile.id;
+            //print("dbg id: " + debugMonitor);
+        }
+      } else if (tileChar == "A") {
+        new MobileTile(j, i, 1, false, false, antigravDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+      } else if (tileChar == "B") {
+        new MobileTile(j, i, 0, true, false, balloonDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+      } else if (tileChar == "W") {
+        new MobileTile(j, i, 0, true, true, woodDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+      } else if (tileChar == "S") {
+        new MobileTile(j, i, 2, false, true, stoneDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+      } else if (tileChar == "G") {
+        var objectiveTile = new MobileTile(j, i, 0, false, true, goldDraw);
+        
+        //Make a static tile air pocket for the mobile tile to occupy.
+        staticTiles[i][j] = 0;
+        
+        //Tag this tile to indicate that it is the objective tile.
+        objectiveTile.objective = true;
+      } //end of tileChar if-else block
+    } //end of j for loop
+  } //end of i for loop
+  
+  
+  
+  //Calculate the tile width for the display of the new level.
+  if (300 / levelStringArray.length < 300 / levelStringArray[0].length) {
+    tileWidth = 300 / levelStringArray.length;
+    
+  } else {
+    tileWidth = 300 / levelStringArray[0].length;
+    
+  }
+  
+  //Calculate the width and height of the new level display on the canvas.
+  let levelDisplayWidth = tileWidth * levelStringArray[0].length;
+  let levelDisplayHeight = tileWidth * levelStringArray.length;
+  
+  
+  //Calculate the coordinates of the upper left corner to draw the new level display.
+  levelDisplayOffsetX = (400 - levelDisplayWidth) / 2;
+  levelDisplayOffsetY = (400 - levelDisplayHeight) / 2;
+  
+  
+  
+} //end of load function
+
+//loads a particular level by level number
+function loadLevel(levelNumber) {
+  
+  if (levelNumber == 1) {
+      //print("Loading level 1");
+      load(level1);
+    
+  } else if (levelNumber == 2) {
+      //print("ldng lvl 2");
+      load(level2);  
+    
+  } else if (levelNumber == 3) {
+      
+    
+      load(level3);         
+      
+      debugMonitor = mobileAt(7, 5).id;
+    
+  } else if (levelNumber == 4) {
+      load(level4);
+    
+  } else if (levelNumber == 5) {
+      load(level5);
+    
+  } else if (levelNumber == 6) {
+      load(winnerLevel);
+    
+  }
+  
+  currentLevelNumber = levelNumber;
+} //end of loadLevel function
+
+
+function advanceLevel() {
+  //print("Advncng lvl...");
+  
+  loadLevel(currentLevelNumber + 1);
+  
+}
+
+
+//returns true if the level discrete coordinates x, y are within the level boundaries, false otherwise
+function tileInBounds(x, y) {
+  return (y >= 0 && y <= levelLowerBound) && (x >= 0 && x <= levelRightBound);
+}
+
+
+//returns true if the tile at level discrete coordinates x, y is empty of static and mobile tiles, false otherwise 
+function tileEmpty(x, y) {
+  
+  
+  //If the tile does not contain a static tile or a mobile tile, return true for empty.
+  if (mobileIdAt(x, y) == -1 && staticTiles[y][x] == 0) {
+      return true;
+  } 
+  
+  
+  //If the tile is not in bounds, return true for empty.
+  if (!tileInBounds(x, y)) {
+    return true;
+  }
+  
+  
+  //If the tile is in bounds and contains something, return false for not empty.
+  return false;
+  
+} //end of tileInBounds function
+
+
+
+//returns the array with every instance of the element removed from it
+function removeElementFromArray(arr, elem) {
+  
+  let newArr = []; //output array
+  
+  //Transfer elements from the current array to the output array.
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] != elem) { //This element is not the one to be removed,
+       newArr[newArr.length] = arr[i]; //so it is fine to add it to the output.
+    }
+  } 
+      
+  //Return the altered output array.
+  return newArr;
+      
+  
+} //end of removeElementFromArray function
+
+
+//Gets the mobile tile at x, y level discrete coordinates. Returns null if there is no mobile tile at the coordinates.
+function mobileAt(x, y) {
+  
+  let mobileId = mobileIdAt(x, y);
+  
+  
+  if (mobileId == -1) //there is no mobile tile here
+    return null;
+  
+  
+  
+  return mobileTiles[mobileId];
+  
+  
+} //end of mobileAt function
+
+
+//Returns the id of the mobile at x, y level discrete coordinates. Returns -1 if there is no mobile tile at the coordinates.
+function mobileIdAt(x, y) {
+  
+  //If this mobile tile is not within the boundaries of the level, return -1 for non-existent.
+  if (!tileInBounds(x, y))
+    return -1;
+  
+  return mobileTileIdMapping[y][x];
+}
+
+
+
+
+
+
+
+
+
+
+
+class MobileTile {
+  constructor(x, y, weight, fragile, affectedByGravity, drawFunction) {
+    this.x = x; //discrete coordinates x position
+    this.y = y; //discrete coordinates y position
+    this.weight = weight; //weight, 0 for gold, 2 for stone
+    this.fragile = fragile; //whether or not this tile can be broken if a heavy tile falls on it
+    this.affectedByGravity = affectedByGravity; //whether or not this mobile tile is affected by gravity
+    this.id = mobileTiles.length; //Set the tile's id to be the index it will have when it is added to mobileTiles.
+    this.draw = drawFunction; //function to draw this mobile tile
+    this.currentlyUpdating = false; //whether or not the update function is currently running for this tile
+    this.inUpdateQueue = false; //whether or not this mobile tile is in the update queue
+    this.lastPushed = -1; //update cycle number of last update that this mobile tile was successfully pushed
+    
+    //Add this tile to the mobileTiles array.
+    mobileTiles[mobileTiles.length] = this;
+    
+    //Add this tile to the mobile tile id mapping data structure.
+    mobileTileIdMapping[y][x] = this.id;
+  } //end of constructor
+  
+  //Moves this tile to newX, newY level discrete coordinates. Returns 1 if this causes the level to be advanced, 0 otherwise.
+  moveTo(newX, newY) {
+    
+    
+    //Remove this tile's id from its old position in the mobile tile id mapping.
+    mobileTileIdMapping[this.y][this.x] = -1;
+    
+    
+    
+    //Since this tile is being moved out from under it, queue the mobile tile above this tile to be updated.
+    let mobileAbove = mobileAt(this.x - gravDirectionX, this.y - gravDirectionY);
+    if (mobileAbove != null)
+      mobileAbove.queueToUpdate();
+    
+    
+    //Update tile's coordinates.
+    this.x = newX;
+    this.y = newY;
+    
+    
+    
+    //If this tile is now outside of the level, destroy it and return from the function.
+    if (!tileInBounds(this.x, this.y)) { //this tile is out of the level
+      
+      
+      //If this tile is the objective the player has won the level, so advance to the next one.
+      if (this.objective) {
+
+        advanceLevel();
+                 
+        return 1; //Level was advanced, so return 1.
+      }
+      
+      
+      this.destroy();
+      return 0; //Tile was destroyed without the level being advanced, so return 0.
+    }
+    
+    
+    //Since this tile's new position exists, add this tile's id at its new position in the mobile tile id mapping.
+      mobileTileIdMapping[newY][newX] = this.id;
+    
+    
+  } //end of moveTo function
+  
+  //Updates this mobile tile to account for gravity. Returns 1 if the update results in the level being advanced, 0 otherwise.
+  update() {
+  
+
+    if (!this.currentlyUpdating) { //not already in the process of being updated
+      
+      //Set currentlyUpdating to signify that it is now being updated.
+      this.currentlyUpdating = true;
+      
+      
+      //If this tile was in the updateQueue, remove it to signify that it is no longer in need of being updated and set inUpdateQueue.
+      if (this.inUpdateQueue) {
+        updateQueueIds = removeElementFromArray(updateQueueIds, this.id);
+        this.inUpdateQueue = false;
+      }
+      
+
+      
+      if (this.affectedByGravity) { //tile only actually needs to be updated to account for gravity if it is affected by gravity
+
+
+        
+        let updateComplete = false;
+
+        let futureX = this.x + gravDirectionX;
+        let futureY = this.y + gravDirectionY;
+        
+        
+        let mobileBelow; //mobile tile directly below this one
+        let fallDist = 0; //distance mobile tile has fallen over the course of this update (in tiles)
+
+
+
+
+
+
+          //Keep moving the tile down by 1 until it is done updating.
+          while (!updateComplete) { 
+
+            mobileBelow = mobileAt(futureX, futureY);
+
+            
+            //If there is a tile below this one, try pushing it to see if this tile can take its place.
+            if (mobileBelow != null) {
+
+
+              let pushWeight = this.weight;
+
+              //If this tile is a heavy tile and it has fallen insufficiently far to deal its max force, nerf its push force to 1.
+              if (fallDist == 0 && this.weight == 2) {
+                pushWeight = 1;
+              }
+
+              
+              let pushSuccess = mobileBelow.push(gravDirectionX, gravDirectionY, pushWeight, fallDist);
+              
+              //If there is a mobile tile below this one which will not budge when pushed, set update to be completed.
+              if (!pushSuccess)
+                updateComplete = true;
+
+            } else if (tileInBounds(this.x + gravDirectionX, this.y + gravDirectionY) && staticTiles[this.y + gravDirectionY][this.x + gravDirectionX] != 0) { //this tile is blocked from falling by a solid static block
+              updateComplete = true;
+            }
+
+
+            //If update is not over, move the tile to account for gravity.
+            if (!updateComplete) {
+              
+              //Move this tile.
+              let moveReturn = this.moveTo(futureX, futureY);
+              
+              
+              //If moving the tile resulted in the level being advanced, return 1.
+              if (moveReturn == 1)
+                return 1;
+              
+              
+              //If moving the tile resulted in it being destroyed, set update to be completed.
+              if (mobileTiles[this.id] == null)
+                updateComplete = true;
+              
+              
+              //Update futureX, futureY, fallDist to account for tile movement.
+              futureX = this.x + gravDirectionX;
+              futureY = this.y + gravDirectionY;
+              fallDist++;
+
+              
+            } //end of if block
+          } //end of update while loop
+        } //end of affectedByGravity if block
+          
+            
+      //This tile is now done being updated, set currentlyUpdating to signify this.
+      this.currentlyUpdating = false;
+
+    } //end of !currentlyUpdating if block
+    
+      
+    //Update has completed without level being advanced, so return 0.
+    return 0;
+    
+  } //end of update function
+    
+    
+    
+  //Pushes this tile dx in the x direction and dy in the y direction, with 'pushWeight' force and a fall distance onto the tile of 'fallDist'. Returns true if the old position of the tile is now vacant.
+  push(dx, dy, pushWeight, fallDist) {
+    
+    //If this tile is heavy enough to push anything, push it.
+    if (pushWeight >= 1) {
+      
+      //If this mobile tile is not affected by gravity and is of non-trivial weight, and the fall distance onto would not be sufficient to make it move, return false as the tile still occupies its old position.
+      if (!this.affectedByGravity && this.weight > 0 && fallDist == 0) {
+        
+        return false;
+      }
+
+      //If this mobile tile is not gravity affected with non-trivial weight and it was pushed already this update cycle, return false as the tile still occupies its old position.
+      if (!this.affectedByGravity && this.weight > 0 && this.lastPushed == updateCycleNumber) {
+        
+        return false;
+
+      }
+
+      //If this tile is fragile and the push force on it is great, destroy it and return true as the old tile position is no longer occupied.
+      if (pushWeight >= 2 && this.fragile) {
+        this.destroy();
+
+        
+        return true;
+      }
+
+      let futureX = this.x + dx;
+      let futureY = this.y + dy;
+
+      //If the tile is being pushed against a solid static tile, return false as the tile still occupies its old position.
+      if (tileInBounds(futureX, futureY) && staticTiles[futureY][futureX] == 1) {
+        
+        return false;
+      }
+      
+      
+      if (tileEmpty(futureX, futureY) && ((this.weight < 1 || this.affectedByGravity) || (fallDist >= 1 && this.lastPushed != updateCycleNumber))) { //If the tile this mobile tile is being pushed into is empty, do the push successfully, except for in the edge case: If it is a tile not affected by gravity of non-trivial weight then the fall distance onto it is at least 1 and it has not already been pushed this update cycle...
+       
+        
+        //Move this tile ahead into the tile it has been pushed into.
+        this.moveTo(this.x + dx, this.y + dy);
+            
+        //This mobile tile has been successfully pushed, so update its last pushed cycle number.
+        this.lastPushed = updateCycleNumber;
+
+        //Return true for successfully pushing this mobile tile aside.
+        return true;
+      }
+
+      
+      //If there is a mobile tile blocking the tile from being pushed, pass on the push to it and resolve based off of the return value.
+      let mobileAhead = mobileAt(this.x + dx, this.y + dy);
+      if (mobileAhead != null) {
+        
+        
+        //Pass the push on to the mobile tile ahead of this one.
+        let pushSuccess = mobileAhead.push(dx, dy, pushWeight, fallDist);
+        
+        //If the mobile tile ahead is pushed aside successfully, 
+        if (pushSuccess) {
+          this.moveTo(this.x + dx, this.y + dy);
+          
+          
+          //This mobile tile has been successfully pushed, so update its last pushed cycle number.
+          this.lastPushed = updateCycleNumber;
+
+          
+          
+          
+          
+          //This mobile tile has been pushed aside successfully, so return true.
+          return true;
+        } //end of pushSuccess if block
+
+        return pushSuccess;
+        } else {
+          
+          
+          //No combination of circumstances allow this mobile tile to be moved or destroyed, so return false.
+          return false;
+
+        }
+      } //end of pushWeight >= 1 if block
+    
+    
+  } //end of push function
+  
+  //queues this tile to be updated when the opportunity presents itself
+  queueToUpdate() {
+    //Add this tile to the update queue.
+    updateQueueIds[updateQueueIds.length] = this.id;
+    
+    //Set inUpdateQueue to indicate that this mobile tile is now in the update queue.
+    this.inUpdateQueue = true;
+  }
+  
+  //destroys this mobile tile
+  destroy() {
+    
+    //Remove this tile from the mobile tile array.
+    mobileTiles[this.id] = null;
+    
+    //Clear this tile from the mobile tile id mapping.
+    if (tileInBounds(this.x, this.y))
+      mobileTileIdMapping[this.y][this.x] = -1;
+
+    
+    //Since the tile holding it up is now destroyed, queue the tile above this tile to be updated.
+    let mobileAbove = mobileAt(this.x - gravDirectionX, this.y - gravDirectionY);  
+    if (mobileAbove != null) { //If there is a tile above this one,
+        mobileAbove.queueToUpdate(); //queue it to be updated.
+    } 
+    
+  } //end of destroy function
+  
+} //end of MobileTile class
+
+
+
+
+
+
+
+
+//event handler for when the user presses a key
+function keyPressed() {
+  
+  //If the key pressed was 'a', 'w', 's' or 'd', set the gravity direction to the corresponding value. 
+  if (key == "w" || key == "a" || key == "s" || key == "d") {
+    if (key == "w") { //gravity up
+      gravDirectionY = -1;
+      gravDirectionX = 0;
+    
+    } else if (key == "a") { //gravity left
+      gravDirectionX = -1;
+      gravDirectionY = 0;
+        
+    } else if (key == "s") { //gravity down
+      gravDirectionY = 1;
+      gravDirectionX = 0;
+        
+    } else if (key == "d") { //gravity right
+      gravDirectionX = 1
+      gravDirectionY = 0;
+      
+    }  
+    
+    
+    var updateOutcome; //for the return value when update is called
+
+
+    if (gravDirectionX == -1) { //gravity is pointing left
+
+
+
+      for (let i = 0; i <= levelLowerBound && updateOutcome != 1; i++) {//Repeat for every mobile tile in the level or until updateOutcome comes up as 1...
+
+        for (let j = 0; j <= levelRightBound && updateOutcome != 1; j++) {
+
+          let mobile = mobileAt(j, i);
+
+          //If the mobile tile exists, update it.
+          if (mobile != null) {
+            updateOutcome = mobile.update();
+          }
+
+        } //end of j for loop
+
+      } //end of i for loop
+
+        } else if (gravDirectionX == 1) { //gravity is pointing right
+
+          for (let i = 0; i <= levelLowerBound && updateOutcome != 1; i++) { //Repeat for every mobile tile in the level or until updateOutcome comes up as 1...
+            for (let j = levelRightBound; j >= 0 && updateOutcome != 1; j--) {
+              
+              let mobile = mobileAt(j,i);
+              
+              //If the mobile tile exists, update it.
+              if (mobile != null) {
+
+                updateOutcome = mobile.update();
+              }
+
+            } //end of j for loop
+            
+          } //end of i for loop
+
+        } else if (gravDirectionY == -1) { //gravity is pointing left
+
+
+
+        for (let j = 0; j <= levelRightBound && updateOutcome != 1; j++) { //Repeat for every mobile tile in the level or until updateOutcome comes up as 1...
+          for (let i = 0; i <= levelLowerBound && updateOutcome != 1; i++) {
+            
+            let mobile = mobileAt(j, i);
+            
+            //If the mobile tile exists, update it.
+            if (mobile != null) {
+              updateOutcome = mobile.update();
+            }
+
+
+          } //end of i for loop
+        
+        } //end of j for loop
+
+      } else if (gravDirectionY == 1) { //gravity is pointing up
+        for (let j = 0; j <= levelRightBound && updateOutcome != 1; j++) { //Repeat for every mobile tile in the level or until updateOutcome comes up as 1...
+        
+          for (let i = levelLowerBound; i >= 0 && updateOutcome != 1; i--) {
+            
+            let mobile = mobileAt(j, i);
+            
+            //If the mobile tile exists, update it.
+            if (mobile != null) {
+              
+              updateOutcome = mobile.update();
+              
+            } 
+          } //end of i for loop
+        } //end of j for loop
+      } //end of gravDirection case if-else block
+
+      
+      //Update any mobile tiles in the update queue.
+      while (updateQueueIds.length > 0) { //While there are still elements remaining in the queue,
+        
+        //Update the mobile tile at the beginning of the array so that they are updated in the same order that they were added in.
+        let nextMobileId = updateQueueIds[0];
+        let nextMobile = mobileTiles[nextMobileId];
+        
+        if (nextMobile != null) //next mobile in the queue exists
+          mobileTiles[nextMobileId].update();
+        else //next mobile in the queue has been destroyed since being queued
+          updateQueueIds = removeElementFromArray(updateQueueIds, nextMobileId);
+      }
+
+      
+      updateCycleNumber++;
+    } //end of 'w', 'a', 's', 'd' if block
+
+  
+  //If the player has pressed the 'r' key, reset the level to its starting state by loading it a second time.
+  if (key == "r") {
+    loadLevel(currentLevelNumber); 
+  }
+  
+  
+  //Draw the level to account for changes resulting from gravity change or level reset.
+  drawLevel();
+} //end of keyPressed event handler function
+
+
+
+
+
+
+
+
+
+
+function setup() {
+  createCanvas(400, 400);
+  
+  //Set the color mode to red-green-blue.
+  colorMode(RGB);
+  
+  //Set the color for the static solid level walls.
+  wallColor = color(120, 150, 120);
+  
+  //Load the first level to start the game.
+  loadLevel(1);
+  
+  //Draw the level now that it exists.
+  drawLevel();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+function draw() {
+  //Drawing in the draw function would be inefficient as sprites only need to be re-drawn when their positions are updated by player interaction.
+}
