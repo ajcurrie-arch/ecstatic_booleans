@@ -621,23 +621,29 @@ function load(levelStringArray) {
   
   
   
-  //Calculate the tile width for the display of the new level.
-  if (300 / levelStringArray.length < 300 / levelStringArray[0].length) {
-    tileWidth = 300 / levelStringArray.length;
+  //Calculate the width of the boundary square within which the level can be drawn and still leave a comfortable margin to the edge of the canvas.
+  levelDisplayBoundaryWidth = width * 3/4;
+  levelDisplayBoundaryHeight = height * 3/4;
+  
+  
+  //Determine the width that tiles will be displayed at as the largest they can be without the level going out of the boundary.
+  if (levelDisplayBoundaryHeight / levelStringArray.length < levelDisplayBoundaryWidth / levelStringArray[0].length) {
+    tileWidth = levelDisplayBoundaryHeight / levelStringArray.length;
     
   } else {
-    tileWidth = 300 / levelStringArray[0].length;
+    tileWidth = levelDisplayBoundaryWidth / levelStringArray[0].length;
     
   }
   
-  //Calculate the width and height of the new level display on the canvas.
+  
+  //Calculate the width and the height of the level display based off of the width of the tiles that make it up.
   let levelDisplayWidth = tileWidth * levelStringArray[0].length;
   let levelDisplayHeight = tileWidth * levelStringArray.length;
   
   
-  //Calculate the coordinates of the upper left corner to draw the new level display.
-  levelDisplayOffsetX = (400 - levelDisplayWidth) / 2;
-  levelDisplayOffsetY = (400 - levelDisplayHeight) / 2;
+  //Calculate the coordinates of the upper left corner to draw the new level display to make the level centered in the middle of the screen with equal margins on both sides.
+  levelDisplayOffsetX = (width - levelDisplayWidth) / 2;
+  levelDisplayOffsetY = (height - levelDisplayHeight) / 2;
   
   
   
